@@ -1,5 +1,6 @@
 """Streamlit でホストしたアプリで import したモデルを使ってみる
 """
+import argparse
 import json
 import logging
 import time
