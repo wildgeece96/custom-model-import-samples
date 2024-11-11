@@ -10,9 +10,31 @@
 - ストレージ: 512GB
 
 必要な権限
-- IAM Role の作成・ポリシーのアタッチ
-- モデルの重みを格納する S3 バケットへの FullAccess
-- Bedrock への FullAccess
+- IAM Role の作成・ポリシーのアタッチをする権限
+- モデルの重みを格納する S3 バケットへ書き込み権限（AmazonS3FullAccess など）
+- Bedrock への FullAccess（AmazonBedrockFullAccess など）
+
+IAM の作成・ポリシーアタッチに関するポリシー例
+```json
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "VisualEditor0",
+			"Effect": "Allow",
+			"Action": [
+				"iam:CreatePolicy",
+				"iam:CreateRole",
+				"iam:AttachRolePolicy"
+			],
+			"Resource": [
+				"arn:aws:iam::<aws_account_id>:role/bedrock-cmi*",
+				"arn:aws:iam::<aws_account_id>:policy/bedrock-cmi*"
+			]
+		}
+	]
+}
+```
 
 ## setup
 
@@ -58,7 +80,15 @@ import したモデルの ARN がメッセージに表示されるので、そ�
 python call_imported_model.py --model-arn <メモした ARN>
 ```
 
+Streamlit でのサンプルアプリのホスト
 
-
+```sh
+streamlit run app.py -- --model-arn <メモした ARN>
+```
+Code Editor の場合、pinggy と呼ばれるサービスを利用することでホストされた UI を確かめることができます。  
+うまくいけば HTTP/HTTPS から始まる URL が表示されます。https:// から始まる URL をコピーし、ウェブブラウザの別タブを開き、URL バーに貼り付けて移動してください。  
+```sh
+ssh -p 443 -R0:localhost:8501 a.pinggy.io
+```
 
 

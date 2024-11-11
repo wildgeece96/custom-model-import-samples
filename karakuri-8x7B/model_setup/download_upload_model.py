@@ -1,10 +1,11 @@
-import os
 import argparse
+import logging
+import os
+import shutil
 import subprocess
+
 import boto3
 from botocore.exceptions import ClientError
-import shutil
-import logging
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO)
@@ -41,9 +42,10 @@ class ModelDownloader:
             return False
 
         try:
-            # 既存のディレクトリがあれば削除
+            # 既存のディレクトリがあればダウンロードをスキップ
             if os.path.exists(self.local_path):
-                shutil.rmtree(self.local_path)
+                logger.info("Model has already been downloaded.")
+                return True
 
             # Git LFS pull でモデルをダウンロード
             logger.info(f"Cloning repository: {self.model_id}")
@@ -65,7 +67,7 @@ class ModelDownloader:
             logger.error(f"Error during model download: {str(e)}")
             return False
 
-    def upload_to_s3(self):
+    def upload_to_s3(self, s3_prefix: str):
         """モデルを S3 にアップロード"""
         try:
             # モデルディレクトリ内のすべてのファイルをアップロード
@@ -79,7 +81,7 @@ class ModelDownloader:
                     self.s3_client.upload_file(
                         local_file_path,
                         self.bucket_name,
-                        f"karakuri-model/{s3_key}"
+                        s3_prefix
                     )
 
             logger.info("All files uploaded to S3 successfully")
@@ -122,8 +124,8 @@ def parse_arguments():
     parser.add_argument(
         '--local-path',
         type=str,
-        default="./karakuri-model",
-        help='Local path for temporary model storage (default: ./karakuri-model)'
+        default="models/karakuri-ai/karakuri-lm-8x7b-chat-v0.1",
+        help='Local path for temporary model storage (default: models/karakuri-ai/karakuri-lm-8x7b-chat-v0.1)'
     )
     
     parser.add_argument(
@@ -134,9 +136,9 @@ def parse_arguments():
     )
     
     parser.add_argument(
-        '--no-cleanup',
+        '--cleanup',
         action='store_true',
-        help='Do not clean up local files after upload'
+        help='Clean up local files after upload'
     )
     
     return parser.parse_args()
@@ -169,7 +171,7 @@ def main():
     
     finally:
         # クリーンアップ（--no-cleanup が指定されていない場合）
-        if not args.no_cleanup:
+        if args.cleanup:
             downloader.cleanup()
 
 

@@ -1,11 +1,13 @@
 """S3 にアップロードした重みを使って Bedrock 上にモデルを import する
 """
-import boto3
+import argparse
 import logging
-import time
 import os
-from botocore.exceptions import ClientError
+import time
 from urllib.parse import urlparse
+
+import boto3
+from botocore.exceptions import ClientError
 
 # ロギングの設定
 logging.basicConfig(
@@ -29,8 +31,8 @@ class BedrockModelImporter:
             'region_name': region_name,
             'bucket_name': bucket_name,
             's3_prefix': s3_prefix or self.repo_name,
-            'role_name': f"{self.repo_name}-import-role",
-            'policy_name': f"{self.repo_name}-s3-policy",
+            'role_name': f"bedrock-cmi-{self.repo_name}-import-role",
+            'policy_name': f"bedrock-cmi-{self.repo_name}-s3-policy",
             'job_name': f"{self.repo_name}-import-job-{int(time.time())}",
             'model_name': self.repo_name
         }
@@ -195,14 +197,11 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    if not model_id or not bucket_name:
-        raise ValueError("MODEL_ID and MODEL_BUCKET_NAME environment variables are required")
-
     importer = BedrockModelImporter(
         model_id=args.model_id,
         bucket_name=args.bucket,
         region_name=args.region,
-        s3_prefix=s3_prefix
+        s3_prefix=args.s3_prefix
     )
 
     try:
